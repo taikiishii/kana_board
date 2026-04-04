@@ -33,9 +33,23 @@ class KanaBoard:
             ['〇', 'わ', 'ら', 'や', 'ま', 'は', 'な', 'た', 'さ', 'か', 'あ'],
             ['×', 'を', 'り', 'ゆ', 'み', 'ひ', 'に', 'ち', 'し', 'き', 'い'],
             ['ゃ', 'ん', 'る', 'よ', 'む', 'ふ', 'ぬ', 'つ', 'す', 'く', 'う'],
-            ['ゅ', 'ー', 'れ', '＊', 'め', 'へ', 'ね', 'て', 'せ', 'け', 'え'],
-            ['ょ', '？', 'ろ', '・', 'も', 'ほ', 'の', 'と', 'そ', 'こ', 'お'],
+            ['ゅ', 'ー', 'れ', '゛', 'め', 'へ', 'ね', 'て', 'せ', 'け', 'え'],
+            ['ょ', '？', 'ろ', '゜', 'も', 'ほ', 'の', 'と', 'そ', 'こ', 'お'],
         ]
+
+        # ひらがな→半濁点付き変換辞書
+        self.handakuon_map = {
+            'は': 'ぱ', 'ひ': 'ぴ', 'ふ': 'ぷ', 'へ': 'ぺ', 'ほ': 'ぽ',
+        }
+
+        # ひらがな→濁点付き変換辞書
+        self.dakuon_map = {
+            'か': 'が', 'き': 'ぎ', 'く': 'ぐ', 'け': 'げ', 'こ': 'ご',
+            'さ': 'ざ', 'し': 'じ', 'す': 'ず', 'せ': 'ぜ', 'そ': 'ぞ',
+            'た': 'だ', 'ち': 'ぢ', 'つ': 'づ', 'て': 'で', 'と': 'ど',
+            'は': 'ば', 'ひ': 'び', 'ふ': 'ぶ', 'へ': 'べ', 'ほ': 'ぼ',
+            'う゛': 'ゔ',
+        }
 
         # 数字
         self.numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '削除']
@@ -68,7 +82,7 @@ class KanaBoard:
 
         # 初期フォーカス
         self.current_row = 0
-        self.current_col = 0
+        self.current_col = 10  # 「あ」の位置
         self.timer = None
         self.update_focus(start_timer=False)  # 初回はタイマー起動しない
 
@@ -81,9 +95,9 @@ class KanaBoard:
         # 説明ラベル
         instructions_frame = tk.Frame(root)
         instructions_frame.grid(row=2, column=0, sticky='ew', padx=10, pady=10)
-        label1 = tk.Label(instructions_frame, text="吹く：↓", font=('Arial', 14))
+        label1 = tk.Label(instructions_frame, text="吹く：←", font=('Arial', 14))
         label1.pack(side=tk.LEFT, padx=20)
-        label2 = tk.Label(instructions_frame, text="吸う：→", font=('Arial', 14))
+        label2 = tk.Label(instructions_frame, text="吸う：↓", font=('Arial', 14))
         label2.pack(side=tk.LEFT, padx=20)
 
         # リサイズイベント
@@ -151,6 +165,22 @@ class KanaBoard:
             # 最後の文字を削除
             if self.display.get('1.0', tk.END).strip():
                 self.display.delete('end-2c', 'end')
+        elif char == '゛':
+            # 直前の文字を濁点付きに変換
+            text = self.display.get('1.0', tk.END)
+            if text.strip():
+                last = text.rstrip('\n')[-1]
+                if last in self.dakuon_map:
+                    self.display.delete('end-2c', 'end')
+                    self.display.insert(tk.END, self.dakuon_map[last])
+        elif char == '゜':
+            # 直前の文字を半濁点付きに変換
+            text = self.display.get('1.0', tk.END)
+            if text.strip():
+                last = text.rstrip('\n')[-1]
+                if last in self.handakuon_map:
+                    self.display.delete('end-2c', 'end')
+                    self.display.insert(tk.END, self.handakuon_map[last])
         elif char:
             self.display.insert(tk.END, char)
             self.display.see(tk.END)
@@ -166,6 +196,20 @@ class KanaBoard:
         if char == '削除':
             if self.display.get('1.0', tk.END).strip():
                 self.display.delete('end-2c', 'end')
+        elif char == '゛':
+            text = self.display.get('1.0', tk.END)
+            if text.strip():
+                last = text.rstrip('\n')[-1]
+                if last in self.dakuon_map:
+                    self.display.delete('end-2c', 'end')
+                    self.display.insert(tk.END, self.dakuon_map[last])
+        elif char == '゜':
+            text = self.display.get('1.0', tk.END)
+            if text.strip():
+                last = text.rstrip('\n')[-1]
+                if last in self.handakuon_map:
+                    self.display.delete('end-2c', 'end')
+                    self.display.insert(tk.END, self.handakuon_map[last])
         elif char:
             self.display.insert(tk.END, char)
             self.display.see(tk.END)
