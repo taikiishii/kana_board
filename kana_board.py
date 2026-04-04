@@ -72,11 +72,11 @@ class KanaBoard:
         self.timer = None
         self.update_focus(start_timer=False)  # 初回はタイマー起動しない
 
-        # キーイベント
-        self.root.bind('<Right>', self.move_right)
-        self.root.bind('<Down>', self.move_down)
-        self.root.bind('<Left>', self.move_left)
-        self.root.bind('<Up>', self.move_up)
+        # キーイベント（常に受け取るためbind_allを使用）
+        self.root.bind_all('<Right>', self.move_right)
+        self.root.bind_all('<Down>', self.move_down)
+        self.root.bind_all('<Left>', self.move_left)
+        self.root.bind_all('<Up>', self.move_up)
 
         # 説明ラベル
         instructions_frame = tk.Frame(root)
@@ -172,5 +172,6 @@ class KanaBoard:
 
 if __name__ == '__main__':
     root = tk.Tk()
+    root.state('zoomed')  # 起動時にウィンドウを最大化
     app = KanaBoard(root)
     root.mainloop()
