@@ -1,4 +1,5 @@
 import tkinter as tk
+import tkinter.font as tkfont
 
 class KanaBoard:
     def __init__(self, root):
@@ -9,6 +10,10 @@ class KanaBoard:
         self.root.rowconfigure(2, weight=0)
         self.root.columnconfigure(0, weight=1)
 
+        # フォント
+        self.base_fontsize = 20
+        self.kana_font = tkfont.Font(family='Arial', size=self.base_fontsize)
+
         # 上部フレーム for display
         top_frame = tk.Frame(root)
         top_frame.grid(row=0, column=0, sticky='nsew', padx=10, pady=10)
@@ -16,7 +21,7 @@ class KanaBoard:
         top_frame.columnconfigure(0, weight=1)
 
         # 表示エリア
-        self.display = tk.Text(top_frame, height=3, wrap=tk.WORD, font=('Arial', 14))
+        self.display = tk.Text(top_frame, height=3, wrap=tk.WORD, font=self.kana_font)
         self.display.grid(row=0, column=0, sticky='nsew')
 
         # 下部フレーム for grid
@@ -40,7 +45,7 @@ class KanaBoard:
         for i, row in enumerate(self.kana):
             row_labels = []
             for j, char in enumerate(row):
-                label = tk.Label(bottom_frame, text=char, font=('Arial', 20), width=3, height=2, relief=tk.RAISED)
+                label = tk.Label(bottom_frame, text=char, font=self.kana_font, width=3, height=2, relief=tk.RAISED)
                 label.grid(row=i, column=j, padx=2, pady=2, sticky='nsew')
                 label.bind('<Button-1>', lambda event, r=i, c=j: self.on_label_click(r, c))
                 row_labels.append(label)
@@ -49,7 +54,7 @@ class KanaBoard:
         # 数字ラベル
         num_labels = []
         for j, num in enumerate(self.numbers):
-            label = tk.Label(bottom_frame, text=num, font=('Arial', 20), width=3, height=2, relief=tk.RAISED)
+            label = tk.Label(bottom_frame, text=num, font=self.kana_font, width=3, height=2, relief=tk.RAISED)
             label.grid(row=len(self.kana), column=j, padx=2, pady=2, sticky='nsew')
             label.bind('<Button-1>', lambda event, r=len(self.kana), c=j: self.on_label_click(r, c))
             num_labels.append(label)
@@ -65,7 +70,7 @@ class KanaBoard:
         self.current_row = 0
         self.current_col = 0
         self.timer = None
-        self.update_focus()
+        self.update_focus(start_timer=False)  # 初回はタイマー起動しない
 
         # キーイベント
         self.root.bind('<Right>', self.move_right)
@@ -81,7 +86,28 @@ class KanaBoard:
         label2 = tk.Label(instructions_frame, text="吸う：→", font=('Arial', 14))
         label2.pack(side=tk.LEFT, padx=20)
 
-    def update_focus(self):
+        # リサイズイベント
+        self.root.bind('<Configure>', self.on_resize)
+
+    def on_resize(self, event):
+        # ウィンドウ幅・高さからフォントサイズを決定
+        w = self.root.winfo_width()
+        h = self.root.winfo_height()
+        # ひらがな・数字グリッドの最大行・列数
+        max_row = len(self.labels)
+        max_col = max(len(row) for row in self.labels)
+        # 目安: 横幅の1/col数, 高さの1/(行数+2)の0.5倍程度
+        size_w = max(10, int(w / (max_col * 1.5)))
+        size_h = max(10, int(h / ((max_row + 2) * 1.5)))
+        new_size = min(size_w, size_h)
+        # 80%に調整
+        new_size = int(new_size * 0.8)
+        if new_size < 10:
+            new_size = 10
+        self.kana_font.configure(size=new_size)
+        self.display.configure(font=self.kana_font)
+
+    def update_focus(self, start_timer=False):
         # 全てのラベルをデフォルト
         for row in self.labels:
             for label in row:
@@ -93,27 +119,28 @@ class KanaBoard:
         # タイマーリセット
         if self.timer:
             self.root.after_cancel(self.timer)
-        self.timer = self.root.after(2000, self.select_char)
+        if start_timer:
+            self.timer = self.root.after(3000, self.select_char)
 
     def move_right(self, event):
         self.current_col = (self.current_col + 1) % len(self.labels[self.current_row])
-        self.update_focus()
+        self.update_focus(start_timer=True)
 
     def move_left(self, event):
         self.current_col = (self.current_col - 1) % len(self.labels[self.current_row])
-        self.update_focus()
+        self.update_focus(start_timer=True)
 
     def move_down(self, event):
         self.current_row = (self.current_row + 1) % len(self.labels)
         if self.current_col >= len(self.labels[self.current_row]):
             self.current_col = 0
-        self.update_focus()
+        self.update_focus(start_timer=True)
 
     def move_up(self, event):
         self.current_row = (self.current_row - 1) % len(self.labels)
         if self.current_col >= len(self.labels[self.current_row]):
             self.current_col = 0
-        self.update_focus()
+        self.update_focus(start_timer=True)
 
     def select_char(self):
         if self.current_row < len(self.kana):
