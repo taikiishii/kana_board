@@ -1,5 +1,40 @@
 import tkinter as tk
 import tkinter.font as tkfont
+import platform
+
+# 和文モールス符号対応表（・=トン、ー=ツー）
+MORSE_MAP = {
+    # あ行
+    'あ': 'ーー・ーー', 'い': '・ー',      'う': '・・ー',    'え': 'ー・ーーー', 'お': '・ー・・・',
+    # か行
+    'か': '・ー・・',   'き': 'ー・ー・・', 'く': '・・・ー',  'け': 'ー・ーー',   'こ': 'ーーーー',
+    # さ行
+    'さ': 'ー・ー・ー', 'し': 'ーー・ー・', 'す': 'ーーー・ー', 'せ': '・ーーー・', 'そ': 'ーーー・',
+    # た行
+    'た': 'ー・',       'ち': '・・ー・',   'つ': '・ーー・',  'て': '・ー・ーー', 'と': '・・ー・・',
+    # な行
+    'な': '・ー・',     'に': 'ー・ー・',   'ぬ': '・・・・',  'ね': 'ーー・ー',   'の': '・・ーー',
+    # は行
+    'は': 'ー・・・',   'ひ': 'ーー・・ー', 'ふ': 'ーー・・',  'へ': '・',         'ほ': 'ー・・',
+    # ま行
+    'ま': 'ー・・ー',   'み': '・・ー・ー', 'む': 'ー',        'め': 'ー・・・ー',  'も': 'ー・・ー・',
+    # や行
+    'や': '・ーー',     'ゆ': 'ー・・ーー', 'よ': 'ーー',
+    # ら行
+    'ら': '・・・',     'り': 'ーー・',     'る': 'ー・ーー・', 'れ': 'ーーー',     'ろ': '・ー・ー',
+    # わ行・ん
+    'わ': 'ー・ー',     'を': '・ーーー',   'ん': '・ー・ー・',
+    # 小文字（親字と同じ符号）
+    'ゃ': '・ーー',     'ゅ': 'ー・・ーー', 'ょ': 'ーー',
+    # 記号
+    '゛': '・・',       '゜': '・・ーー・', 'ー': '・ーー・ー',
+    '.': '・ー・ー・ー',
+    # 数字（国際モールス符号）
+    '0': 'ーーーーー',  '1': '・ーーーー',  '2': '・・ーーー',
+    '3': '・・・ーー',  '4': '・・・・ー',  '5': '・・・・・',
+    '6': 'ー・・・・',  '7': 'ーー・・・',  '8': 'ーーー・・',
+    '9': 'ーーーー・',
+}
 
 class KanaBoard:
     def __init__(self, root):
@@ -13,6 +48,7 @@ class KanaBoard:
         # フォント
         self.base_fontsize = 20
         self.kana_font = tkfont.Font(family='Arial', size=self.base_fontsize)
+        self.morse_font = tkfont.Font(family='Arial', size=max(8, int(self.base_fontsize * 0.45)))
 
         # 上部フレーム for display
         top_frame = tk.Frame(root)
@@ -34,7 +70,7 @@ class KanaBoard:
             ['×', 'を', 'り', 'ゆ', 'み', 'ひ', 'に', 'ち', 'し', 'き', 'い'],
             ['ゃ', 'ん', 'る', 'よ', 'む', 'ふ', 'ぬ', 'つ', 'す', 'く', 'う'],
             ['ゅ', 'ー', 'れ', '゛', 'め', 'へ', 'ね', 'て', 'せ', 'け', 'え'],
-            ['ょ', '？', 'ろ', '゜', 'も', 'ほ', 'の', 'と', 'そ', 'こ', 'お'],
+            ['ょ', '.', 'ろ', '゜', 'も', 'ほ', 'の', 'と', 'そ', 'こ', 'お'],
         ]
 
         # ひらがな→半濁点付き変換辞書
@@ -59,19 +95,36 @@ class KanaBoard:
         for i, row in enumerate(self.kana):
             row_labels = []
             for j, char in enumerate(row):
-                label = tk.Label(bottom_frame, text=char, font=self.kana_font, width=3, height=2, relief=tk.RAISED)
-                label.grid(row=i, column=j, padx=2, pady=2, sticky='nsew')
-                label.bind('<Button-1>', lambda event, r=i, c=j: self.on_label_click(r, c))
-                row_labels.append(label)
+                morse = MORSE_MAP.get(char, '')
+                cell = tk.Frame(bottom_frame, relief=tk.RAISED, bd=2)
+                cell.grid(row=i, column=j, padx=2, pady=2, sticky='nsew')
+                kana_lbl = tk.Label(cell, text=char, font=self.kana_font)
+                kana_lbl.pack(expand=True, fill=tk.BOTH)
+                morse_lbl = tk.Label(cell, text=morse, font=self.morse_font)
+                morse_lbl.pack(expand=True, fill=tk.BOTH)
+                for w in (cell, kana_lbl, morse_lbl):
+                    w.bind('<Button-1>', lambda event, r=i, c=j: self.on_label_click(r, c))
+                row_labels.append(cell)
             self.labels.append(row_labels)
+
+        # デフォルト背景色を保存（クロスプラットフォーム対応）
+        _tmp = tk.Label(bottom_frame)
+        self._default_label_bg = _tmp.cget('bg')
+        _tmp.destroy()
 
         # 数字ラベル
         num_labels = []
         for j, num in enumerate(self.numbers):
-            label = tk.Label(bottom_frame, text=num, font=self.kana_font, width=3, height=2, relief=tk.RAISED)
-            label.grid(row=len(self.kana), column=j, padx=2, pady=2, sticky='nsew')
-            label.bind('<Button-1>', lambda event, r=len(self.kana), c=j: self.on_label_click(r, c))
-            num_labels.append(label)
+            morse = MORSE_MAP.get(num, '')
+            cell = tk.Frame(bottom_frame, relief=tk.RAISED, bd=2)
+            cell.grid(row=len(self.kana), column=j, padx=2, pady=2, sticky='nsew')
+            kana_lbl = tk.Label(cell, text=num, font=self.kana_font)
+            kana_lbl.pack(expand=True, fill=tk.BOTH)
+            morse_lbl = tk.Label(cell, text=morse, font=self.morse_font)
+            morse_lbl.pack(expand=True, fill=tk.BOTH)
+            for w in (cell, kana_lbl, morse_lbl):
+                w.bind('<Button-1>', lambda event, r=len(self.kana), c=j: self.on_label_click(r, c))
+            num_labels.append(cell)
         self.labels.append(num_labels)
 
         # グリッドのリサイズ対応
@@ -112,23 +165,29 @@ class KanaBoard:
         max_col = max(len(row) for row in self.labels)
         # 目安: 横幅の1/col数, 高さの1/(行数+2)の0.5倍程度
         size_w = max(10, int(w / (max_col * 1.5)))
-        size_h = max(10, int(h / ((max_row + 2) * 1.5)))
+        size_h = max(10, int(h / ((max_row + 2) * 2.0)))  # セルごとに2行（かな＋符号）
         new_size = min(size_w, size_h)
         # 80%に調整
         new_size = int(new_size * 0.8)
         if new_size < 10:
             new_size = 10
         self.kana_font.configure(size=new_size)
+        self.morse_font.configure(size=max(7, int(new_size * 0.45)))
         self.display.configure(font=self.kana_font)
 
     def update_focus(self, start_timer=False):
-        # 全てのラベルをデフォルト
+        # 全てのセルをデフォルト
         for row in self.labels:
-            for label in row:
-                label.config(bg='SystemButtonFace')
+            for cell in row:
+                cell.config(bg=self._default_label_bg)
+                for w in cell.winfo_children():
+                    w.config(bg=self._default_label_bg)
 
         # 現在のフォーカスをハイライト
-        self.labels[self.current_row][self.current_col].config(bg='yellow')
+        cell = self.labels[self.current_row][self.current_col]
+        cell.config(bg='yellow')
+        for w in cell.winfo_children():
+            w.config(bg='yellow')
 
         # タイマーリセット
         if self.timer:
@@ -216,6 +275,10 @@ class KanaBoard:
 
 if __name__ == '__main__':
     root = tk.Tk()
-    root.state('zoomed')  # 起動時にウィンドウを最大化
+    # 起動時にウィンドウを最大化（クロスプラットフォーム対応）
+    if platform.system() == 'Windows':
+        root.state('zoomed')
+    else:
+        root.attributes('-zoomed', True)
     app = KanaBoard(root)
     root.mainloop()
