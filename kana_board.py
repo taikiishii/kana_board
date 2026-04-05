@@ -103,6 +103,7 @@ class KanaBoard:
 
         # ラベルを作成
         self.labels = []
+        self.morse_labels = []
         for i, row in enumerate(self.kana):
             row_labels = []
             for j, char in enumerate(row):
@@ -113,6 +114,7 @@ class KanaBoard:
                 kana_lbl.pack(expand=True, fill=tk.BOTH)
                 morse_lbl = tk.Label(cell, text=morse, font=self.morse_font)
                 morse_lbl.pack(expand=True, fill=tk.BOTH)
+                self.morse_labels.append(morse_lbl)
                 for w in (cell, kana_lbl, morse_lbl):
                     w.bind('<Button-1>', lambda event, r=i, c=j: self.on_label_click(r, c))
                 row_labels.append(cell)
@@ -133,6 +135,7 @@ class KanaBoard:
             kana_lbl.pack(expand=True, fill=tk.BOTH)
             morse_lbl = tk.Label(cell, text=morse, font=self.morse_font)
             morse_lbl.pack(expand=True, fill=tk.BOTH)
+            self.morse_labels.append(morse_lbl)
             for w in (cell, kana_lbl, morse_lbl):
                 w.bind('<Button-1>', lambda event, r=len(self.kana), c=j: self.on_label_click(r, c))
             num_labels.append(cell)
@@ -315,6 +318,8 @@ class KanaBoard:
             self.on_switch_focus = False
             self.mode_btn.config(bg=self._default_btn_bg)
         if self.morse_mode:
+            for morse_lbl in self.morse_labels:
+                morse_lbl.pack(expand=True, fill=tk.BOTH)
             self.label1.config(text='吹く：ー')
             self.label2.config(text='吸う：・')
             self.mode_btn.config(text='カーソルモードへ\n' + MODE_SWITCH_MORSE)
@@ -324,6 +329,8 @@ class KanaBoard:
                 self.root.after_cancel(self.timer)
                 self.timer = None
         else:
+            for morse_lbl in self.morse_labels:
+                morse_lbl.pack_forget()
             self.label1.config(text='吹く：←')
             self.label2.config(text='吸う：↓')
             self.mode_btn.config(text='モールスモードへ')
