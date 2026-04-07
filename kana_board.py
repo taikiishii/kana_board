@@ -60,6 +60,7 @@ class KanaBoard:
         self.base_fontsize = 20
         self.kana_font = tkfont.Font(family='Arial', size=self.base_fontsize)
         self.morse_font = tkfont.Font(family='Arial', size=max(8, int(self.base_fontsize * 0.45)))
+        self.mode_btn_font = tkfont.Font(family='Arial', size=max(8, int(self.base_fontsize * 0.5)))
 
         # 上部フレーム for display
         top_frame = tk.Frame(root)
@@ -167,13 +168,13 @@ class KanaBoard:
         # 説明ラベル
         instructions_frame = tk.Frame(root)
         instructions_frame.grid(row=2, column=0, sticky='ew', padx=10, pady=10)
-        self.label1 = tk.Label(instructions_frame, text="吹く：←", font=('Arial', 14))
+        self.label1 = tk.Label(instructions_frame, text="吹く：←", font=self.kana_font)
         self.label1.pack(side=tk.LEFT, padx=20)
-        self.label2 = tk.Label(instructions_frame, text="吸う：↓", font=('Arial', 14))
+        self.label2 = tk.Label(instructions_frame, text="吸う：↓", font=self.kana_font)
         self.label2.pack(side=tk.LEFT, padx=20)
-        self.morse_buffer_label = tk.Label(instructions_frame, text='', font=('Arial', 14),
-                                           width=12, anchor='w')
-        self.mode_btn = tk.Button(instructions_frame, text='モールスモードへ', font=('Arial', 14),
+        self.morse_buffer_label = tk.Label(instructions_frame, text='', font=self.kana_font,
+                           width=12, anchor='w', fg='blue')
+        self.mode_btn = tk.Button(instructions_frame, text='モールスモードへ', font=self.mode_btn_font,
                                   command=self.toggle_mode)
         self.mode_btn.pack(side=tk.RIGHT, padx=20)
         # ボタンのデフォルト背景色を保存
@@ -202,6 +203,7 @@ class KanaBoard:
             new_size = 10
         self.kana_font.configure(size=new_size)
         self.morse_font.configure(size=max(7, int(new_size * 0.45)))
+        self.mode_btn_font.configure(size=max(8, int(new_size * 0.5)))
         self.display.configure(font=self.kana_font)
 
     def update_focus(self, start_timer=False):
@@ -243,6 +245,12 @@ class KanaBoard:
         if self.morse_mode:
             self.morse_input('・')
         else:
+            # モード切替ボタン上で↓を押したら先頭「あ」へ戻る
+            if self.on_switch_focus:
+                self.current_row = 0
+                self.current_col = 10  # 「あ」の位置
+                self.update_focus(start_timer=True)
+                return
             # 削除ポジション（最終行・最終列）から下でモード切替ボタンへ
             if (self.current_row == len(self.labels) - 1 and
                     self.current_col == len(self.numbers) - 1):
@@ -323,7 +331,7 @@ class KanaBoard:
             self.label1.config(text='吹く：ー')
             self.label2.config(text='吸う：・')
             self.mode_btn.config(text='カーソルモードへ\n' + MODE_SWITCH_MORSE)
-            self.morse_buffer_label.pack(side=tk.LEFT, padx=10)
+            self.morse_buffer_label.pack(side=tk.LEFT, padx=(30, 10))
             # カーソルモードのタイマーをキャンセル
             if self.timer:
                 self.root.after_cancel(self.timer)
