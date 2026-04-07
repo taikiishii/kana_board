@@ -355,7 +355,20 @@ class KanaBoard:
         self.morse_buffer_label.config(text=self.morse_buffer)
         if self.morse_timer:
             self.root.after_cancel(self.morse_timer)
+        # 候補が一意に確定したらタイムアウトを待たず即時確定
+        if self._can_finalize_morse_now(self.morse_buffer):
+            self.morse_decide()
+            return
         self.morse_timer = self.root.after(DECIDE_MS, self.morse_decide)
+
+    def _can_finalize_morse_now(self, buf):
+        """現在のバッファが唯一の確定候補なら即時確定可能かを返す。"""
+        all_codes = list(MORSE_REVERSE.keys()) + [MODE_SWITCH_MORSE]
+        exact = (buf in MORSE_REVERSE) or (buf == MODE_SWITCH_MORSE)
+        if not exact:
+            return False
+        has_longer_candidate = any(code.startswith(buf) and len(code) > len(buf) for code in all_codes)
+        return not has_longer_candidate
 
     def _focus_char(self, char):
         """グリッド内でcharを探してフォーカスを移動する。"""
